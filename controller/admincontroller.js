@@ -85,10 +85,10 @@ class admincontroller {
             );
 
             res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 24 * 60 * 60 * 1000
+                httpOnly: true, // recommended
+                secure: true, // true if using HTTPS in production
+                sameSite: "none", // important for cross-origin
+                maxAge: 24 * 60 * 60 * 1000, // 1 day
             });
 
             return res.status(200).json({
@@ -159,7 +159,7 @@ class admincontroller {
         }
     };
 
-    static updateprofile = async (req, res) => {    
+    static updateprofile = async (req, res) => {
 
         try {
             const { name, email } = req.body;
