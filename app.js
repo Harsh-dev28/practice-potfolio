@@ -19,7 +19,7 @@ connectDB()
 app.use(express.json())
 app.use(cookieparser());
 app.use(cors({
-    origin: "http://localhost:5173", // client url 
+    origin: "https://guileless-rabanadas-1ea9d5.netlify.app", // client url 
     credentials: true,            // to allow cookies 
 }));
 
