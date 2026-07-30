@@ -39,24 +39,32 @@ class herocontroller {
             }
 
             const imageFile = req.files?.profileimage || req.files?.image;
+            const bodyImage = req.body.profileimage || req.body.image;
 
-            if (!imageFile) {
+            if (!imageFile && !bodyImage) {
                 return res.status(400).json({
                     success: false,
-                    message: "Image is required"
+                    message: "Profile image is required"
                 });
             }
 
-            const uploadimage = await cloudinary.uploader.upload(
-                imageFile.tempFilePath,
-                {
-                    folder: 'portfolio_hero',
-                    resource_type: "image"
-                }
-            );
+            let profileImageUrl = bodyImage || '';
+            let publicId = '';
 
-            if (fs.existsSync(imageFile.tempFilePath)) {
-                fs.unlinkSync(imageFile.tempFilePath);
+            if (imageFile) {
+                const uploadimage = await cloudinary.uploader.upload(
+                    imageFile.tempFilePath,
+                    {
+                        folder: 'portfolio_hero',
+                        resource_type: "image"
+                    }
+                );
+
+                if (fs.existsSync(imageFile.tempFilePath)) {
+                    fs.unlinkSync(imageFile.tempFilePath);
+                }
+                profileImageUrl = uploadimage.secure_url;
+                publicId = uploadimage.public_id;
             }
 
             const createhero = await hero.create({
@@ -69,8 +77,8 @@ class herocontroller {
                 instagram,
                 frontendtitle: finalFrontendTitle,
                 backenedtitle: finalBackendTitle,
-                profileimage: uploadimage.secure_url,
-                public_id: uploadimage.public_id,
+                profileimage: profileImageUrl,
+                public_id: publicId,
             });
 
             return res.status(201).json({
@@ -191,6 +199,8 @@ class herocontroller {
 
                 checkhero.profileimage = uploadnewimage.secure_url;
                 checkhero.public_id = uploadnewimage.public_id;
+            } else if (req.body.profileimage || req.body.image) {
+                checkhero.profileimage = req.body.profileimage || req.body.image;
             }
 
             if (subtitle) checkhero.subtitle = subtitle;
