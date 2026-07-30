@@ -1,6 +1,7 @@
 const hero = require('../models/hero');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
+const { getCache, setCache, clearCache } = require('../utils/cache');
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -81,6 +82,8 @@ class herocontroller {
                 public_id: publicId,
             });
 
+            clearCache('hero');
+
             return res.status(201).json({
                 success: true,
                 message: "Hero section created successfully",
@@ -99,7 +102,16 @@ class herocontroller {
 
     static getAllhero = async (req, res) => {
         try {
-            const gethero = await hero.findOne();
+            const cachedHero = getCache('hero');
+            if (cachedHero) {
+                return res.status(200).json({
+                    success: true,
+                    hero: cachedHero,
+                    gethero: cachedHero
+                });
+            }
+
+            const gethero = await hero.findOne().lean();
 
             if (!gethero) {
                 return res.status(404).json({
@@ -107,6 +119,8 @@ class herocontroller {
                     message: "Hero not found"
                 });
             }
+
+            setCache('hero', gethero);
 
             return res.status(200).json({
                 success: true,
@@ -214,6 +228,7 @@ class herocontroller {
             if (backenedtitle || backendTitle) checkhero.backenedtitle = backenedtitle || backendTitle;
 
             await checkhero.save();
+            clearCache('hero');
 
             return res.status(200).json({
                 success: true,
@@ -248,6 +263,7 @@ class herocontroller {
                 await cloudinary.uploader.destroy(heroexist.public_id);
             }
             await heroexist.deleteOne();
+            clearCache('hero');
 
             return res.json({
                 success: true,

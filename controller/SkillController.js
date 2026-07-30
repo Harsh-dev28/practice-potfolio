@@ -1,4 +1,5 @@
 const skill = require("../models/skill");
+const { getCache, setCache, clearCache } = require('../utils/cache');
 
 class skillcontroller {
 
@@ -21,6 +22,8 @@ class skillcontroller {
 
             await result.save();
 
+            clearCache('skill');
+
             return res.status(201).json({
                 success: true,
                 message: "Skill created successfully",
@@ -38,7 +41,17 @@ class skillcontroller {
 
     static getAllskill = async (req, res) => {
         try {
-            const skillexist = await skill.find();
+            const cachedSkills = getCache('skill');
+            if (cachedSkills) {
+                return res.status(200).json({
+                    success: true,
+                    skills: cachedSkills,
+                    skillexist: cachedSkills
+                });
+            }
+
+            const skillexist = await skill.find().lean();
+            setCache('skill', skillexist);
 
             return res.status(200).json({
                 success: true,
@@ -76,6 +89,8 @@ class skillcontroller {
                 });
             }
 
+            clearCache('skill');
+
             return res.status(200).json({
                 success: true,
                 message: "Skill updated successfully",
@@ -104,6 +119,8 @@ class skillcontroller {
                     message: "Skill not found"
                 });
             }
+
+            clearCache('skill');
 
             return res.status(200).json({
                 success: true,

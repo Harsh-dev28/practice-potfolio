@@ -1,4 +1,5 @@
 const about = require('../models/about');
+const { getCache, setCache, clearCache } = require('../utils/cache');
 
 class aboutcontroller {
 
@@ -33,6 +34,8 @@ class aboutcontroller {
                 achievements: achievements || []
             });
 
+            clearCache('about');
+
             return res.status(201).json({
                 success: true,
                 message: "About created successfully",
@@ -50,7 +53,16 @@ class aboutcontroller {
 
     static getAllabout = async (req, res) => {
         try {
-            const aboutexist = await about.findOne();
+            const cachedAbout = getCache('about');
+            if (cachedAbout) {
+                return res.status(200).json({
+                    success: true,
+                    about: cachedAbout,
+                    aboutexist: cachedAbout
+                });
+            }
+
+            const aboutexist = await about.findOne().lean();
 
             if (!aboutexist) {
                 return res.status(404).json({
@@ -58,6 +70,8 @@ class aboutcontroller {
                     message: "About not found"
                 });
             }
+
+            setCache('about', aboutexist);
 
             return res.status(200).json({
                 success: true,
@@ -114,6 +128,7 @@ class aboutcontroller {
             if (achievements) aboutexist.achievements = achievements;
 
             await aboutexist.save();
+            clearCache('about');
 
             return res.status(200).json({
                 success: true,
@@ -144,6 +159,7 @@ class aboutcontroller {
             }
 
             await about.findByIdAndDelete(id);
+            clearCache('about');
 
             return res.status(200).json({
                 success: true,

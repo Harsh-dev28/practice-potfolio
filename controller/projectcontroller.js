@@ -1,6 +1,7 @@
 const project = require('../models/project');
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
+const { getCache, setCache, clearCache } = require('../utils/cache');
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -66,6 +67,8 @@ class projectcontroller {
                 technologies: parsedTechnologies
             });
 
+            clearCache('project');
+
             return res.status(201).json({
                 success: true,
                 message: "Project created successfully",
@@ -84,7 +87,17 @@ class projectcontroller {
 
     static getAllproject = async (req, res) => {
         try {
-            const projects = await project.find().sort({ createdAt: -1 });
+            const cachedProjects = getCache('project');
+            if (cachedProjects) {
+                return res.status(200).json({
+                    success: true,
+                    message: "Projects fetched successfully",
+                    projects: cachedProjects
+                });
+            }
+
+            const projects = await project.find().sort({ createdAt: -1 }).lean();
+            setCache('project', projects);
 
             return res.status(200).json({
                 success: true,
@@ -197,6 +210,7 @@ class projectcontroller {
             }
 
             await targetProject.save();
+            clearCache('project');
 
             return res.status(200).json({
                 success: true,
@@ -230,6 +244,7 @@ class projectcontroller {
                 await cloudinary.uploader.destroy(PROJECT.public_id);
             }
             await PROJECT.deleteOne();
+            clearCache('project');
 
             return res.json({
                 success: true,

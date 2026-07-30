@@ -1,4 +1,5 @@
 const service = require('../models/service');
+const { getCache, setCache, clearCache } = require('../utils/cache');
 
 class servicecontroller {
 
@@ -19,6 +20,8 @@ class servicecontroller {
                 icon
             });
 
+            clearCache('service');
+
             return res.status(201).json({
                 success: true,
                 message: 'Service created successfully',
@@ -37,7 +40,17 @@ class servicecontroller {
 
     static getAllservice = async (req, res) => {
         try {
-            const Service = await service.find();
+            const cachedServices = getCache('service');
+            if (cachedServices) {
+                return res.status(200).json({
+                    success: true,
+                    services: cachedServices,
+                    Service: cachedServices
+                });
+            }
+
+            const Service = await service.find().lean();
+            setCache('service', Service);
 
             return res.status(200).json({
                 success: true,
@@ -68,6 +81,8 @@ class servicecontroller {
                 });
             }
 
+            clearCache('service');
+
             return res.status(200).json({
                 success: true,
                 message: "Service updated successfully",
@@ -95,6 +110,8 @@ class servicecontroller {
                     message: "Service not found"
                 });
             }
+
+            clearCache('service');
 
             return res.status(200).json({
                 success: true,
