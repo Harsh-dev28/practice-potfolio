@@ -8,6 +8,60 @@ const herocontroller = require('../controller/herocontroller');
 const projectcontroller = require('../controller/projectcontroller');
 const servicecontroller = require('../controller/servicecontroller');
 const skillcontroller = require('../controller/SkillController');
+const heroModel = require('../models/hero');
+const aboutModel = require('../models/about');
+const serviceModel = require('../models/service');
+const projectModel = require('../models/project');
+const { getCache, setCache } = require('../utils/cache');
+
+// Health Check Ping Endpoint for Render Keep-Alive Monitoring
+router.get("/health", (req, res) => {
+    return res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// Consolidated Homepage Endpoint (Eliminates Frontend HTTP Waterfall / N+1 RTTs)
+router.get("/homepage", async (req, res) => {
+    try {
+        const cachedData = getCache("homepage_all");
+        if (cachedData) {
+            return res.status(200).json({
+                success: true,
+                data: cachedData
+            });
+        }
+
+        const [hero, about, services, projects] = await Promise.all([
+            heroModel.findOne().lean(),
+            aboutModel.findOne().lean(),
+            serviceModel.find().lean(),
+            projectModel.find().sort({ createdAt: -1 }).lean()
+        ]);
+
+        const responsePayload = {
+            hero,
+            about,
+            services,
+            projects
+        };
+
+        setCache("homepage_all", responsePayload);
+
+        return res.status(200).json({
+            success: true,
+            data: responsePayload
+        });
+    } catch (error) {
+        console.error("Error fetching homepage batch data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+});
 
 // Admin API
 router.post("/registeradmin", adminController.registeradmin);

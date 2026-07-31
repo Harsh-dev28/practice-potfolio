@@ -68,6 +68,7 @@ class projectcontroller {
             });
 
             clearCache('project');
+            clearCache('homepage_all');
 
             return res.status(201).json({
                 success: true,
@@ -87,7 +88,11 @@ class projectcontroller {
 
     static getAllproject = async (req, res) => {
         try {
-            const cachedProjects = getCache('project');
+            const limit = parseInt(req.query.limit) || 0;
+            const page = parseInt(req.query.page) || 1;
+            const cacheKey = limit > 0 ? `project_${limit}_${page}` : 'project';
+
+            const cachedProjects = getCache(cacheKey);
             if (cachedProjects) {
                 return res.status(200).json({
                     success: true,
@@ -96,8 +101,13 @@ class projectcontroller {
                 });
             }
 
-            const projects = await project.find().sort({ createdAt: -1 }).lean();
-            setCache('project', projects);
+            let query = project.find().sort({ createdAt: -1 });
+            if (limit > 0) {
+                query = query.skip((page - 1) * limit).limit(limit);
+            }
+
+            const projects = await query.lean();
+            setCache(cacheKey, projects);
 
             return res.status(200).json({
                 success: true,
@@ -211,6 +221,7 @@ class projectcontroller {
 
             await targetProject.save();
             clearCache('project');
+            clearCache('homepage_all');
 
             return res.status(200).json({
                 success: true,

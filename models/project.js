@@ -37,9 +37,10 @@ const projectschema = new mongoose.Schema({
 
     technologies: [{
         type: String,
-        required: true,
+        required: true
     }]
 }, { timestamps: true });
 
+projectschema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("project", projectschema);

@@ -24,6 +24,10 @@ const clearCache = (keyPattern) => {
         cacheStore.clear();
         return;
     }
+    if (cacheStore.has(keyPattern)) {
+        cacheStore.delete(keyPattern);
+        return;
+    }
     for (const key of cacheStore.keys()) {
         if (key.includes(keyPattern)) {
             cacheStore.delete(key);
