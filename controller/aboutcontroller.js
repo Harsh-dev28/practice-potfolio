@@ -1,5 +1,20 @@
+const mongoose = require('mongoose');
 const about = require('../models/about');
 const { getCache, setCache, clearCache } = require('../utils/cache');
+
+const parseList = (val) => {
+    if (!val) return [];
+    if (typeof val === 'string') {
+        return val.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (Array.isArray(val)) {
+        return val
+            .flatMap(item => (typeof item === 'string' ? item.split(',') : item))
+            .map(s => (typeof s === 'string' ? s.trim() : s))
+            .filter(Boolean);
+    }
+    return [];
+};
 
 class aboutcontroller {
 
@@ -7,31 +22,33 @@ class aboutcontroller {
         try {
             let { title, description, skills, achievements } = req.body;
 
-            if (skills) {
-                if (typeof skills === 'string') {
-                    skills = skills.split(',').map(s => s.trim()).filter(Boolean);
-                } else if (Array.isArray(skills)) {
-                    if (skills.length === 1 && typeof skills[0] === 'string' && skills[0].includes(',')) {
-                        skills = skills[0].split(',').map(s => s.trim()).filter(Boolean);
-                    }
-                }
-            }
+            const parsedSkills = parseList(skills);
+            const parsedAchievements = parseList(achievements);
 
-            if (achievements) {
-                if (typeof achievements === 'string') {
-                    achievements = achievements.split(',').map(s => s.trim()).filter(Boolean);
-                } else if (Array.isArray(achievements)) {
-                    if (achievements.length === 1 && typeof achievements[0] === 'string' && achievements[0].includes(',')) {
-                        achievements = achievements[0].split(',').map(s => s.trim()).filter(Boolean);
-                    }
-                }
+            // Upsert check: if About document already exists, update it instead of creating duplicates
+            let existingAbout = await about.findOne();
+            if (existingAbout) {
+                if (title !== undefined && title !== '') existingAbout.title = title;
+                if (description !== undefined && description !== '') existingAbout.description = description;
+                if (skills !== undefined) existingAbout.skills = parsedSkills;
+                if (achievements !== undefined) existingAbout.achievements = parsedAchievements;
+
+                await existingAbout.save();
+                clearCache('about');
+
+                return res.status(200).json({
+                    success: true,
+                    message: "About updated successfully",
+                    about: existingAbout,
+                    aboutexist: existingAbout
+                });
             }
 
             const About = await about.create({
-                title,
-                description,
-                skills: skills || [],
-                achievements: achievements || []
+                title: title || 'About Me',
+                description: description || '',
+                skills: parsedSkills,
+                achievements: parsedAchievements
             });
 
             clearCache('about');
@@ -39,7 +56,8 @@ class aboutcontroller {
             return res.status(201).json({
                 success: true,
                 message: "About created successfully",
-                about: About
+                about: About,
+                aboutexist: About
             });
 
         } catch (error) {
@@ -93,39 +111,38 @@ class aboutcontroller {
             const { id } = req.params;
             let { title, description, skills, achievements } = req.body;
 
-            const aboutexist = await about.findById(id);
+            let aboutexist = null;
 
+            if (id && mongoose.Types.ObjectId.isValid(id)) {
+                aboutexist = await about.findById(id);
+            }
+
+            // Fallback: If not found by ID or ID was invalid/missing, find the single About doc
             if (!aboutexist) {
-                return res.status(404).json({
-                    success: false,
-                    message: "About not found"
+                aboutexist = await about.findOne();
+            }
+
+            // Upsert: If no document exists in DB at all, create one
+            if (!aboutexist) {
+                aboutexist = await about.create({
+                    title: title || 'About Me',
+                    description: description || '',
+                    skills: parseList(skills),
+                    achievements: parseList(achievements)
+                });
+                clearCache('about');
+                return res.status(201).json({
+                    success: true,
+                    message: "About created successfully",
+                    about: aboutexist,
+                    aboutexist: aboutexist
                 });
             }
 
-            if (skills) {
-                if (typeof skills === 'string') {
-                    skills = skills.split(',').map(s => s.trim()).filter(Boolean);
-                } else if (Array.isArray(skills)) {
-                    if (skills.length === 1 && typeof skills[0] === 'string' && skills[0].includes(',')) {
-                        skills = skills[0].split(',').map(s => s.trim()).filter(Boolean);
-                    }
-                }
-            }
-
-            if (achievements) {
-                if (typeof achievements === 'string') {
-                    achievements = achievements.split(',').map(s => s.trim()).filter(Boolean);
-                } else if (Array.isArray(achievements)) {
-                    if (achievements.length === 1 && typeof achievements[0] === 'string' && achievements[0].includes(',')) {
-                        achievements = achievements[0].split(',').map(s => s.trim()).filter(Boolean);
-                    }
-                }
-            }
-
-            aboutexist.title = title || aboutexist.title;
-            aboutexist.description = description || aboutexist.description;
-            if (skills) aboutexist.skills = skills;
-            if (achievements) aboutexist.achievements = achievements;
+            if (title !== undefined && title !== '') aboutexist.title = title;
+            if (description !== undefined && description !== '') aboutexist.description = description;
+            if (skills !== undefined) aboutexist.skills = parseList(skills);
+            if (achievements !== undefined) aboutexist.achievements = parseList(achievements);
 
             await aboutexist.save();
             clearCache('about');
@@ -138,7 +155,7 @@ class aboutcontroller {
             });
 
         } catch (error) {
-            console.log(error);
+            console.log("Error updating about:", error);
             return res.status(500).json({
                 success: false,
                 message: "Internal server error"
@@ -149,7 +166,12 @@ class aboutcontroller {
     static deleteabout = async (req, res) => {
         try {
             const { id } = req.params;
-            const abouthai = await about.findById(id);
+            let abouthai = null;
+            if (id && mongoose.Types.ObjectId.isValid(id)) {
+                abouthai = await about.findById(id);
+            } else {
+                abouthai = await about.findOne();
+            }
 
             if (!abouthai) {
                 return res.status(404).json({
@@ -158,7 +180,7 @@ class aboutcontroller {
                 });
             }
 
-            await about.findByIdAndDelete(id);
+            await about.findByIdAndDelete(abouthai._id);
             clearCache('about');
 
             return res.status(200).json({

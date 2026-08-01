@@ -24,9 +24,11 @@ const clearCache = (keyPattern) => {
         cacheStore.clear();
         return;
     }
+    // Always clear composite homepage cache when individual models update
+    cacheStore.delete('homepage_all');
+
     if (cacheStore.has(keyPattern)) {
         cacheStore.delete(keyPattern);
-        return;
     }
     for (const key of cacheStore.keys()) {
         if (key.includes(keyPattern)) {
