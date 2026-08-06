@@ -13,7 +13,7 @@ class certificatecontroller {
 
     static createcertificate = async (req, res) => {
         try {
-            const { title, organization, issueDate, credentialUrl, description } = req.body;
+            const { title, organization, issueDate, description } = req.body;
 
             if (!title || !organization) {
                 return res.status(400).json({
@@ -42,7 +42,6 @@ class certificatecontroller {
                 title,
                 organization,
                 issueDate: issueDate || "",
-                credentialUrl: credentialUrl || "",
                 description: description || "",
                 image: imageUrl,
                 public_id: publicId
@@ -126,7 +125,7 @@ class certificatecontroller {
     static updatecertificate = async (req, res) => {
         try {
             const { id } = req.params;
-            const { title, organization, issueDate, credentialUrl, description } = req.body;
+            const { title, organization, issueDate, description } = req.body;
 
             const targetCertificate = await certificate.findById(id);
 
@@ -161,7 +160,6 @@ class certificatecontroller {
             targetCertificate.title = title || targetCertificate.title;
             targetCertificate.organization = organization || targetCertificate.organization;
             targetCertificate.issueDate = issueDate !== undefined ? issueDate : targetCertificate.issueDate;
-            targetCertificate.credentialUrl = credentialUrl !== undefined ? credentialUrl : targetCertificate.credentialUrl;
             targetCertificate.description = description !== undefined ? description : targetCertificate.description;
 
             await targetCertificate.save();

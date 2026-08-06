@@ -15,10 +15,6 @@ const certificateschema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    credentialUrl: {
-        type: String,
-        trim: true
-    },
     description: {
         type: String,
         trim: true
