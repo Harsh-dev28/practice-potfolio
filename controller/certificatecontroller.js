@@ -66,6 +66,8 @@ class certificatecontroller {
         }
     };
 
+    
+
     static getAllcertificate = async (req, res) => {
         try {
             const cachedCertificates = getCache('certificate');
