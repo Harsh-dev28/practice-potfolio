@@ -24,6 +24,15 @@ app.use(cors({
 }));
 
 
+// Root health check endpoint for external ping / keep-alive monitoring (e.g. UptimeRobot, cron-job.org)
+app.get("/health", (req, res) => {
+    return res.status(200).json({
+        status: "ok",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.use('/api', web)
 
 

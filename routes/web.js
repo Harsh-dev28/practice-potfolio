@@ -8,10 +8,12 @@ const herocontroller = require('../controller/herocontroller');
 const projectcontroller = require('../controller/projectcontroller');
 const servicecontroller = require('../controller/servicecontroller');
 const skillcontroller = require('../controller/SkillController');
+const certificatecontroller = require('../controller/certificatecontroller');
 const heroModel = require('../models/hero');
 const aboutModel = require('../models/about');
 const serviceModel = require('../models/service');
 const projectModel = require('../models/project');
+const certificateModel = require('../models/certificate');
 const { getCache, setCache } = require('../utils/cache');
 
 // Health Check Ping Endpoint for Render Keep-Alive Monitoring
@@ -34,18 +36,20 @@ router.get("/homepage", async (req, res) => {
             });
         }
 
-        const [hero, about, services, projects] = await Promise.all([
+        const [hero, about, services, projects, certificates] = await Promise.all([
             heroModel.findOne().lean(),
             aboutModel.findOne().lean(),
             serviceModel.find().lean(),
-            projectModel.find().sort({ createdAt: -1 }).lean()
+            projectModel.find().sort({ createdAt: -1 }).lean(),
+            certificateModel.find().sort({ createdAt: -1 }).lean()
         ]);
 
         const responsePayload = {
             hero,
             about,
             services,
-            projects
+            projects,
+            certificates
         };
 
         setCache("homepage_all", responsePayload);
@@ -110,6 +114,13 @@ router.post("/createskill", skillcontroller.createskill);
 router.get("/getAllskill", skillcontroller.getAllskill);
 router.put("/updateskill/:id", skillcontroller.updateskill);
 router.delete("/deleteskill/:id", skillcontroller.deleteskill);
+
+// Certificate API
+router.post("/createcertificate", certificatecontroller.createcertificate);
+router.get("/getAllcertificate", certificatecontroller.getAllcertificate);
+router.get("/getsinglecertificate/:id", certificatecontroller.getsinglecertificate);
+router.put("/updatecertificate/:id", certificatecontroller.updatecertificate);
+router.delete("/deletecertificate/:id", certificatecontroller.deletecertificate);
 
 
 
