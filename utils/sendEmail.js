@@ -5,36 +5,32 @@ const nodemailer = require('nodemailer');
  */
 const createTransporter = () => {
     const user = process.env.EMAIL_USER || process.env.SMTP_USER;
-    const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-    const service = process.env.EMAIL_SERVICE || (user && user.includes('@gmail.com') ? 'gmail' : undefined);
-    const host = process.env.EMAIL_HOST || process.env.SMTP_HOST;
-    const port = process.env.EMAIL_PORT || process.env.SMTP_PORT || 587;
-    const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
+    const rawPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
 
-    if (!user || !pass) {
+    if (!user || !rawPass) {
         return null;
     }
 
-    if (service) {
-        return nodemailer.createTransporter({
-            service,
-            auth: { user, pass }
-        });
-    }
+    const pass = rawPass.trim().replace(/\s+/g, ''); // automatically strip spaces from 16-digit Google App Passwords
+    const service = process.env.EMAIL_SERVICE || (user && user.includes('@gmail.com') ? 'gmail' : 'gmail');
+    const host = process.env.EMAIL_HOST || process.env.SMTP_HOST;
+    const port = process.env.EMAIL_PORT || process.env.SMTP_PORT || 587;
+    const secure = process.env.EMAIL_SECURE === 'true' || Number(port) === 465;
 
     if (host) {
         return nodemailer.createTransporter({
             host,
             port: Number(port),
             secure,
-            auth: { user, pass }
+            auth: { user: user.trim(), pass },
+            tls: { rejectUnauthorized: false }
         });
     }
 
-    // Default fallback to Gmail service configuration
     return nodemailer.createTransporter({
-        service: 'gmail',
-        auth: { user, pass }
+        service,
+        auth: { user: user.trim(), pass },
+        tls: { rejectUnauthorized: false }
     });
 };
 
