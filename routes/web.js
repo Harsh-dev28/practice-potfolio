@@ -85,6 +85,7 @@ router.delete("/deleteabout/:id", aboutcontroller.deleteabout);
 // Contact API
 router.post("/createcontact", contactcontroller.createcontact);
 router.get("/getAllcontact", contactcontroller.getAllcontact);
+router.delete("/deletecontact/:id", contactcontroller.deletecontact);
 
 //  Hero API
 router.post("/createhero", herocontroller.createhero);
